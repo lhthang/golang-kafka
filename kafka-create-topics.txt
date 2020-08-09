@@ -1,0 +1,7 @@
+kafka-topics --create --bootstrap-server 127.0.0.1:19092 --replication-factor 1 --partitions 3 --topic tasks
+kafka-topics --bootstrap-server 127.0.0.1:19092 --list
+kafka-topics --bootstrap-server 127.0.0.1:19092 --topic tasks --describe
+
+# Not necessary
+kafka-console-consumer --bootstrap-server localhost:19092 --topic tasks --from-beginning
+kafka-consumer-groups  --list --bootstrap-server localhost:19092
