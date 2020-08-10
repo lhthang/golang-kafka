@@ -4,12 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"task-producer/app/form"
-	"task-producer/app/service"
+	"task-producer/app/repository"
 	"task-producer/kafka"
 )
 
 func ApplyTaskAPI(r *gin.RouterGroup) {
-	taskEntity := service.NewTaskEntity()
+	taskEntity := repository.NewTaskEntity()
 	taskRoute := r.Group("/tasks")
 	taskRoute.GET("", getAllTasks())
 	taskRoute.POST("", createTask(taskEntity))
@@ -20,7 +20,7 @@ func getAllTasks() func(ctx *gin.Context) {
 	}
 }
 
-func createTask(entity service.ITask) func(ctx *gin.Context) {
+func createTask(entity repository.ITask) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		var taskForm form.TaskForm
 
