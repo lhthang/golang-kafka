@@ -11,10 +11,12 @@ import (
 )
 
 type Server struct {
-
 }
 
-func(s Server) StartServer()  {
+func (s Server) StartServer() {
+
+	// setup sarama log to stdout
+	sarama.Logger = log.New(os.Stdout, "", log.Ltime)
 
 	resource, err := my_db.InitResource()
 	if err != nil {
@@ -24,8 +26,11 @@ func(s Server) StartServer()  {
 
 	repository.NewTaskEntity(resource)
 
-	// setup sarama log to stdout
-	sarama.Logger = log.New(os.Stdout, "", log.Ltime)
+	_, err = kafka.InitProducer()
+	if err != nil {
+		logrus.Println(err)
+		os.Exit(1)
+	}
 
 	// init consumer
 	cg, err := kafka.InitConsumer()
@@ -34,5 +39,5 @@ func(s Server) StartServer()  {
 	}
 
 	// run consumer
-	kafka.Consume(cg)
+	cg.Consume()
 }

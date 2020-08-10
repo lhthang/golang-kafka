@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"task-producer/app/form"
 	"task-producer/app/service"
-	error2 "task-producer/utils/error"
+	"task-producer/kafka"
 )
 
 func ApplyTaskAPI(r *gin.RouterGroup) {
-	taskEntity :=service.NewTaskEntity()
+	taskEntity := service.NewTaskEntity()
 	taskRoute := r.Group("/tasks")
 	taskRoute.GET("", getAllTasks())
 	taskRoute.POST("", createTask(taskEntity))
@@ -17,10 +17,6 @@ func ApplyTaskAPI(r *gin.RouterGroup) {
 
 func getAllTasks() func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		response := map[string]interface{}{
-			"tasks": nil,
-		}
-		ctx.JSON(200, response)
 	}
 }
 
@@ -33,11 +29,23 @@ func createTask(entity service.ITask) func(ctx *gin.Context) {
 			return
 		}
 
-		task,code,err:=entity.CreateTask(ctx.Request.Method,taskForm)
+		id,err := entity.CreateTask(ctx.Request.Method, taskForm)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"err": err.Error()})
+			return
+		}
+
+		var resp interface{}
+		var code int
+
+		resp, code, err = kafka.Consumer.Consume(id)
+
 		response := map[string]interface{}{
-			"task": task,
-			"error":error2.GetErrorMessage(err),
+			"task":  resp,
+			"error": err,
 		}
 		ctx.JSON(code, response)
 	}
 }
+
+

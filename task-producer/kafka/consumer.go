@@ -7,9 +7,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"task-consumer/app/message"
-	"task-consumer/app/model"
-	"task-consumer/app/repository"
+	"task-producer/app/message"
+	"task-producer/app/model"
 	"time"
 )
 
@@ -22,7 +21,7 @@ var Consumer KafkaConsumer
 var brokers = []string{"127.0.0.1:9092", "127.0.0.1:9093"}
 
 const (
-	topic = "tasks"
+	receiveTopic = "r-tasks"
 )
 
 func InitConsumer() (KafkaConsumer, error) {
@@ -31,10 +30,10 @@ func InitConsumer() (KafkaConsumer, error) {
 
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.CommitInterval = time.Second
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 
 	// init consumer
-	topics := []string{topic}
+	topics := []string{receiveTopic}
 	consumer, err := cluster.NewConsumer(brokers, "group-task", topics, config)
 
 	if err != nil {
@@ -45,8 +44,7 @@ func InitConsumer() (KafkaConsumer, error) {
 	return Consumer, nil
 }
 
-func (ks KafkaConsumer) Consume() {
-	defer ks.Consumer.Close()
+func (ks KafkaConsumer) Consume(id string) (v interface{}, code int, err error) {
 	// trap SIGINT to trigger a shutdown.
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
@@ -62,42 +60,48 @@ func (ks KafkaConsumer) Consume() {
 	for {
 		select {
 		case msg, ok := <-ks.Consumer.Messages():
+			code := 200
+			var v interface{}
+			var errResp error
+			log.Println(msg.Topic)
 			if ok {
-				content:=""
-				if msg.Topic != topic {
+				if msg.Topic != receiveTopic {
 					continue
 				}
 				//handle msg here
 				//custom or refactor code to be cleaner
-				var requestMsg message.RequestMsg
-				err := json.Unmarshal(msg.Value, &requestMsg)
+				var recvMsg message.ReceiveMsg
+				err := json.Unmarshal(msg.Value, &recvMsg)
 
 				if err != nil {
 					log.Println(err)
 					continue
 				}
-				switch requestMsg.Method {
-				case "POST":
-					var task model.Task
-					err = json.Unmarshal([]byte(requestMsg.Message), &task)
+				if recvMsg.Id != id {
+					continue
+				}
+				code = recvMsg.Code
+				errResp = recvMsg.Err
+
+				switch recvMsg.Type {
+				case "Object":
+					var content model.Task
+					err = json.Unmarshal([]byte(recvMsg.Message), &content)
 					if err != nil {
-						break
+						continue
 					}
-					content =repository.TaskEntity.CreateTask(requestMsg.Id, task)
-
-				case "DELETE":
-				case "UPDATE":
-				case "GET":
-				case "GETDETAIL":
+					v = content
+				case "Array":
+					var content []model.Task
+					err = json.Unmarshal([]byte(recvMsg.Message), &content)
+					if err != nil {
+						continue
+					}
+					v = content
 				}
-
-				log.Println(content)
-				err = Producer.Publish(content)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
+				log.Println(v)
 				ks.Consumer.MarkOffset(msg, "") // mark message as processed
+				return v, code, errResp
 			}
 		case <-signals:
 			return

@@ -9,8 +9,9 @@ import (
 
 const (
 	kafkaConn = "localhost:9092"
-	topic     = "tasks"
+	sendToTopic = "r-tasks"
 )
+
 
 type KafkaProducer struct {
 	Producer sarama.SyncProducer
@@ -18,7 +19,7 @@ type KafkaProducer struct {
 
 var Producer KafkaProducer
 
-func InitProducer() (KafkaProducer, error) {
+func InitProducer()(KafkaProducer, error) {
 	// setup sarama log to stdout
 	sarama.Logger = log.New(os.Stdout, "", log.Ltime)
 
@@ -27,7 +28,7 @@ func InitProducer() (KafkaProducer, error) {
 	config.Producer.Retry.Max = 5
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Return.Successes = true
-	config.ClientID = "group1"
+	config.ClientID="group1"
 
 	// async producer
 	//prd, err := sarama.NewAsyncProducer([]string{kafkaConn}, config)
@@ -39,10 +40,10 @@ func InitProducer() (KafkaProducer, error) {
 	return Producer, err
 }
 
-func (kafka KafkaProducer) Publish(message string) error {
+func(kafka KafkaProducer) Publish(message string) error {
 	// publish sync
-	msg := &sarama.ProducerMessage{
-		Topic: topic,
+	msg := &sarama.ProducerMessage {
+		Topic: sendToTopic,
 		Value: sarama.StringEncoder(message),
 	}
 	p, o, err := kafka.Producer.SendMessage(msg)
@@ -58,3 +59,4 @@ func (kafka KafkaProducer) Publish(message string) error {
 	fmt.Println("Offset: ", o)
 	return nil
 }
+
