@@ -1,4 +1,4 @@
-# Distributed System with Kafka and Golang
+# :mage: Distributed System with Kafka and Golang
 <h1 align="center">
 <img src="https://user-images.githubusercontent.com/36944931/89745397-ca025700-dadd-11ea-8cf7-3e754c2ee113.png"/>
 </h1>
