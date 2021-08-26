@@ -79,6 +79,7 @@ func Consume(consumer *cluster.Consumer) {
 				case "UPDATE":
 				}
 				consumer.MarkOffset(msg, "") // mark message as processed
+				consumer.CommitOffsets()
 			}
 		case <-signals:
 			return
