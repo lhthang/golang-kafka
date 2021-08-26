@@ -98,6 +98,7 @@ func (ks KafkaConsumer) Consume() {
 					continue
 				}
 				ks.Consumer.MarkOffset(msg, "") // mark message as processed
+				ks.Consumer.CommitOffsets()
 			}
 		case <-signals:
 			return

@@ -101,6 +101,7 @@ func (ks KafkaConsumer) Consume(id string) (v interface{}, code int, err error) 
 				}
 				log.Println(v)
 				ks.Consumer.MarkOffset(msg, "") // mark message as processed
+				ks.Consumer.CommitOffsets()
 				return v, code, errResp
 			}
 		case <-signals:
